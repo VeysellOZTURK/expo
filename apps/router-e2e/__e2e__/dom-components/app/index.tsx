@@ -6,6 +6,7 @@ import LocalAsset from '../components/03-local-asset';
 import Tailwind from '../components/04-tailwind';
 import PublicAsset from '../components/05-public-asset';
 import NestedComponents from '../components/06-nested';
+import NativeModuleProxy from '../components/07-native-module-proxy';
 
 export default function Page() {
   const [index, setIndex] = useState(0);
@@ -50,6 +51,10 @@ export default function Page() {
 
       <TestCase name="Nested">
         <NestedComponents dom={{ autoSize: true }} />
+      </TestCase>
+
+      <TestCase name="NativeModuleProxy">
+        <NativeModuleProxy dom={{ autoSize: true }} />
       </TestCase>
     </ScrollView>
   );

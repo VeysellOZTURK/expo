@@ -1,8 +1,9 @@
 // A webview without babel to test faster.
+import { WebView as DOMWebView } from '@expo/dom-webview';
 import React from 'react';
-import { WebView } from 'react-native-webview';
+import { WebView as RNWebView } from 'react-native-webview';
 
-import type { BridgeMessage, DOMProps, WebViewProps } from './dom.types';
+import type { BridgeMessage, DOMProps, WebViewProps, WebViewRef } from './dom.types';
 import {
   getInjectBodySizeObserverScript,
   getInjectEventScript,
@@ -30,58 +31,61 @@ function mergeRefs(...props) {
 
 interface Props {
   dom: DOMProps;
-  source: WebViewProps['source'];
+  source: {
+    uri: string;
+  };
 }
 
-const RawWebView = React.forwardRef<object, Props>(({ dom, source, ...marshalProps }, ref) => {
-  const webviewRef = React.useRef<WebView>(null);
-  const [containerStyle, setContainerStyle] = React.useState<WebViewProps['containerStyle']>(null);
+function createWebViewWrapper(webView: typeof DOMWebView | typeof RNWebView) {
+  return React.forwardRef<object, Props>(({ dom, source, ...marshalProps }, ref) => {
+    const webviewRef = React.useRef<WebViewRef>(null);
+    const [containerStyle, setContainerStyle] =
+      React.useState<WebViewProps['containerStyle']>(null);
 
-  const setRef = React.useMemo(() => mergeRefs(webviewRef, {}, ref), [webviewRef, ref]);
+    const setRef = React.useMemo(() => mergeRefs(webviewRef, {}, ref), [webviewRef, ref]);
 
-  const emit = React.useCallback(
-    (detail: BridgeMessage<any>) => {
-      webviewRef.current?.injectJavaScript(getInjectEventScript(detail));
-    },
-    [webviewRef]
-  );
+    const emit = React.useCallback(
+      (detail: BridgeMessage<any>) => {
+        webviewRef.current?.injectJavaScript(getInjectEventScript(detail));
+      },
+      [webviewRef]
+    );
 
-  // serializable props, action names.
+    // serializable props, action names.
 
-  const smartActions = Object.entries(marshalProps).reduce<{
-    props: Record<string, any>;
-    names: string[];
-  }>(
-    (acc, [key, value]) => {
-      if (value instanceof Function) {
-        acc.names.push(key);
-      } else {
-        // TODO: Recurse and assert that nested functions cannot be used.
-        acc.props[key] = value;
-      }
-      return acc;
-    },
-    { names: [], props: {} }
-  );
+    const smartActions = Object.entries(marshalProps).reduce<{
+      props: Record<string, any>;
+      names: string[];
+    }>(
+      (acc, [key, value]) => {
+        if (value instanceof Function) {
+          acc.names.push(key);
+        } else {
+          // TODO: Recurse and assert that nested functions cannot be used.
+          acc.props[key] = value;
+        }
+        return acc;
+      },
+      { names: [], props: {} }
+    );
 
-  // When the `marshalProps` change, emit them to the webview.
-  React.useEffect(() => {
-    emit({ type: '$$props', data: smartActions });
-  }, [emit, smartActions]);
+    // When the `marshalProps` change, emit them to the webview.
+    React.useEffect(() => {
+      emit({ type: '$$props', data: smartActions });
+    }, [emit, smartActions]);
 
-  return (
-    <WebView
-      webviewDebuggingEnabled={__DEV__}
+    return React.createElement(webView, {
+      webviewDebuggingEnabled: __DEV__,
       // Make iOS scrolling feel native.
-      decelerationRate="normal"
-      originWhitelist={['*']}
-      allowFileAccess
-      allowFileAccessFromFileURLs
-      allowsAirPlayForMediaPlayback
-      allowsFullscreenVideo
-      containerStyle={containerStyle}
-      {...dom}
-      injectedJavaScriptBeforeContentLoaded={[
+      decelerationRate: 'normal',
+      originWhitelist: ['*'],
+      allowFileAccess: true,
+      allowFileAccessFromFileURLs: true,
+      allowsAirPlayForMediaPlayback: true,
+      allowsFullscreenVideo: true,
+      containerStyle,
+      ...dom,
+      injectedJavaScriptBeforeContentLoaded: [
         getInjectEnvsScript(),
         // On first mount, inject `$$EXPO_INITIAL_PROPS` with the initial props.
         `window.$$EXPO_INITIAL_PROPS = ${JSON.stringify(smartActions)};true;`,
@@ -90,16 +94,16 @@ const RawWebView = React.forwardRef<object, Props>(({ dom, source, ...marshalPro
         'true;',
       ]
         .filter(Boolean)
-        .join('\n')}
-      ref={setRef}
-      source={source}
-      style={[
+        .join('\n'),
+      ref: setRef,
+      source,
+      style: [
         dom?.style
           ? { flex: 1, backgroundColor: 'transparent' }
           : { backgroundColor: 'transparent' },
         dom?.style,
-      ]}
-      onMessage={(event) => {
+      ],
+      onMessage: (event) => {
         const { type, data } = JSON.parse(event.nativeEvent.data);
 
         if (type === AUTOSIZE_EVENT) {
@@ -160,12 +164,13 @@ const RawWebView = React.forwardRef<object, Props>(({ dom, source, ...marshalPro
             return emitError(error);
           }
         } else {
+          // @ts-ignore: We don't need NativeSyntheticEvent properties from the event.
           dom?.onMessage?.(event);
         }
-      }}
-    />
-  );
-});
+      },
+    });
+  });
+}
 
 function serializeError(error: any) {
   if (error instanceof Error) {
@@ -178,4 +183,5 @@ function serializeError(error: any) {
   return error;
 }
 
-export default RawWebView;
+export const DOMWebViewWrapper = createWebViewWrapper(DOMWebView);
+export const RNWebViewWrapper = createWebViewWrapper(RNWebView);

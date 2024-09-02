@@ -1,4 +1,4 @@
-import type { WebViewProps } from 'react-native-webview';
+import type { WebView as RNWebView, WebViewProps as RNWebViewProps } from 'react-native-webview';
 
 export type JSONValue = boolean | number | string | null | JSONArray | JSONObject;
 
@@ -13,9 +13,11 @@ export type BridgeMessage<TData extends JSONValue> = {
   data: TData;
 };
 
-export { WebViewProps };
+type RNWebViewRef = RNWebView;
+export type WebViewRef = RNWebViewRef;
+export type WebViewProps = RNWebViewProps;
 
-export interface DOMProps extends Omit<WebViewProps, 'source'> {
+export interface DOMProps extends Omit<RNWebViewProps, 'source'> {
   /**
    * Whether to resize the native WebView size based on the DOM content size.
    * @default false

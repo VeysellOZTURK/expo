@@ -8,6 +8,9 @@ import url from 'url';
 
 import { getIsProd } from './common';
 
+const USE_DOM_DIRECTIVE = 'use dom';
+const DOM_COMPONENT_WEBVIEW_ANNOTATION_REGEX = /^\s*(?:\*\s*)?@domComponentWebView\s+(\S+)\s*$/m;
+
 export function expoUseDomDirectivePlugin(api: ConfigAPI): babel.PluginObj {
   // TODO: Is exporting
   const isProduction = api.caller(getIsProd);
@@ -23,7 +26,7 @@ export function expoUseDomDirectivePlugin(api: ConfigAPI): babel.PluginObj {
         }
 
         const hasUseDomDirective = path.node.directives.some(
-          (directive) => directive.value.value === 'use dom'
+          (directive) => directive.value.value === USE_DOM_DIRECTIVE
         );
 
         const filePath = state.file.opts.filename;
@@ -61,11 +64,30 @@ export function expoUseDomDirectivePlugin(api: ConfigAPI): babel.PluginObj {
           );
         }
 
+        let domComponentWebView = 'RNWebView';
+        if (state.file.ast.comments) {
+          for (const comment of state.file.ast.comments) {
+            const match = DOM_COMPONENT_WEBVIEW_ANNOTATION_REGEX.exec(comment.value);
+            if (!match) {
+              continue;
+            }
+            if (match[1] === 'react-native-webview') {
+              domComponentWebView = 'RNWebView';
+            } else if (match[1] === '@expo/dom-webview') {
+              domComponentWebView = 'DOMWebView';
+            } else {
+              throw path.buildCodeFrameError(
+                'Invalid annotation for the DOM component. Expected "react-native-webview" or "@expo/dom-webview".'
+              );
+            }
+          }
+        }
+
         const outputKey = url.pathToFileURL(filePath).href;
 
         const proxyModule: string[] = [
           `import React from 'react';
-import { WebView } from 'expo/dom/internal';`,
+import { ${domComponentWebView} as WebView } from 'expo/dom/internal';`,
         ];
 
         if (isProduction) {
