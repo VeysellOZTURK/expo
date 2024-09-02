@@ -12,8 +12,6 @@ const crypto_1 = __importDefault(require("crypto"));
 const path_1 = require("path");
 const url_1 = __importDefault(require("url"));
 const common_1 = require("./common");
-const USE_DOM_DIRECTIVE = 'use dom';
-const DOM_COMPONENT_WEBVIEW_ANNOTATION_REGEX = /^\s*(?:\*\s*)?@domComponentWebView\s+(\S+)\s*$/m;
 function expoUseDomDirectivePlugin(api) {
     // TODO: Is exporting
     const isProduction = api.caller(common_1.getIsProd);
@@ -26,7 +24,7 @@ function expoUseDomDirectivePlugin(api) {
                 if (platform === 'web') {
                     return;
                 }
-                const hasUseDomDirective = path.node.directives.some((directive) => directive.value.value === USE_DOM_DIRECTIVE);
+                const hasUseDomDirective = path.node.directives.some((directive) => directive.value.value === 'use dom');
                 const filePath = state.file.opts.filename;
                 if (!filePath) {
                     // This can happen in tests or systems that use Babel standalone.
@@ -52,28 +50,10 @@ function expoUseDomDirectivePlugin(api) {
                 if (!hasDefaultExport) {
                     throw path.buildCodeFrameError('The "use dom" directive requires a default export to be present in the file.');
                 }
-                let domComponentWebView = 'RNWebView';
-                if (state.file.ast.comments) {
-                    for (const comment of state.file.ast.comments) {
-                        const match = DOM_COMPONENT_WEBVIEW_ANNOTATION_REGEX.exec(comment.value);
-                        if (!match) {
-                            continue;
-                        }
-                        if (match[1] === 'react-native-webview') {
-                            domComponentWebView = 'RNWebView';
-                        }
-                        else if (match[1] === '@expo/dom-webview') {
-                            domComponentWebView = 'DOMWebView';
-                        }
-                        else {
-                            throw path.buildCodeFrameError('Invalid annotation for the DOM component. Expected "react-native-webview" or "@expo/dom-webview".');
-                        }
-                    }
-                }
                 const outputKey = url_1.default.pathToFileURL(filePath).href;
                 const proxyModule = [
                     `import React from 'react';
-import { ${domComponentWebView} as WebView } from 'expo/dom/internal';`,
+import { WebView } from 'expo/dom/internal';`,
                 ];
                 if (isProduction) {
                     // MUST MATCH THE EXPORT COMMAND!

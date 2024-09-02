@@ -6,7 +6,6 @@ interface Props {
         uri: string;
     };
 }
-export declare const DOMWebViewWrapper: React.ForwardRefExoticComponent<Props & React.RefAttributes<object>>;
-export declare const RNWebViewWrapper: React.ForwardRefExoticComponent<Props & React.RefAttributes<object>>;
-export {};
+declare const RawWebView: React.ForwardRefExoticComponent<Props & React.RefAttributes<object>>;
+export default RawWebView;
 //# sourceMappingURL=webview-wrapper.d.ts.map

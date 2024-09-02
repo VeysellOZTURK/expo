@@ -75,7 +75,7 @@ export default function App() {
 
     expect(res.code).toMatchInlineSnapshot(`
       "import React from 'react';
-      import { RNWebView as WebView } from 'expo/dom/internal';
+      import { WebView } from 'expo/dom/internal';
       var source = {
         uri: new URL("/_expo/@dom/unknown?file=" + "file:///unknown", require("react-native/Libraries/Core/Devtools/getDevServer")().url).toString()
       };
@@ -105,7 +105,7 @@ it(`adds dom components proxy for ios in production`, () => {
 
   expect(res.code).toMatchInlineSnapshot(`
       "import React from 'react';
-      import { RNWebView as WebView } from 'expo/dom/internal';
+      import { WebView } from 'expo/dom/internal';
       var source = {
         uri: "www.bundle/98a73bf4a9137dffe9dcb1db68403c36ee5de77a.html"
       };
@@ -127,7 +127,7 @@ it(`adds dom components proxy for android in production`, () => {
 
   expect(res.code).toMatchInlineSnapshot(`
     "import React from 'react';
-    import { RNWebView as WebView } from 'expo/dom/internal';
+    import { WebView } from 'expo/dom/internal';
     var source = {
       uri: "file:///android_asset/www.bundle/98a73bf4a9137dffe9dcb1db68403c36ee5de77a.html"
     };
@@ -139,28 +139,6 @@ it(`adds dom components proxy for android in production`, () => {
       }));
     });"
   `);
-});
-it(`uses DomWebView when /** @domComponentWebView react-native-webview */`, () => {
-  const source = `
-/** @domComponentWebView react-native-webview */
-"use dom"
-
-export default function App() {
-  return <div />
-}`;
-  const res = transformClient(source);
-  expect(res.code).toMatch(`import { RNWebView as WebView } from 'expo/dom/internal';`);
-});
-it(`uses DomWebView when /** @domComponentWebView @expo/dom-webview */`, () => {
-  const source = `
-/** @domComponentWebView @expo/dom-webview */
-"use dom"
-
-export default function App() {
-  return <div />
-}`;
-  const res = transformClient(source);
-  expect(res.code).toMatch(`import { DOMWebView as WebView } from 'expo/dom/internal';`);
 });
 
 describe('errors', () => {
@@ -197,23 +175,6 @@ function App() {
         2 | "use dom"
         3 |
         4 | function App() {"
-    `);
-  });
-  it(`throws when there is an invalid @domComponentWebView comment`, () => {
-    const source = `
-/** @domComponentWebView invalid-webview */
-"use dom"
-
-export default function App() {
-  return <div />
-}`;
-    expect(() => transformClient(source)).toThrowErrorMatchingInlineSnapshot(`
-      "/unknown: Invalid annotation for the DOM component. Expected "react-native-webview" or "@expo/dom-webview".
-      > 1 |
-          | ^
-        2 | /** @domComponentWebView invalid-webview */
-        3 | "use dom"
-        4 |"
     `);
   });
 });

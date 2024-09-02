@@ -1,4 +1,3 @@
-/** @domComponentWebView @expo/dom-webview */
 'use dom';
 
 import * as Haptics from 'expo-haptics';

@@ -54,7 +54,7 @@ export default function Page() {
       </TestCase>
 
       <TestCase name="NativeModuleProxy">
-        <NativeModuleProxy dom={{ autoSize: true }} />
+        <NativeModuleProxy dom={{ autoSize: true, useExpoDOMWebView: true }} />
       </TestCase>
     </ScrollView>
   );
