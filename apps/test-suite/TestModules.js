@@ -41,7 +41,7 @@ const CameraTestScreen = optionalRequire(() => require('./tests/Camera'));
 
 // List of all modules for tests. Each file path must be statically present for
 // the packager to pick them all up.
-export function getTestModules() {
+export default function getTestModules() {
   const modules = [
     // Sanity
     require('./tests/Basic'),
